@@ -6,7 +6,7 @@ namespace task04
     {
         public int Speed => 50;
         public int FirePower => 100;
-        public Rocket LastRocket { get; private set; }
+        public Rocket LastRocket { get; private set; } = null!;
 
         private double _x = 0;
         private double _y = 0;
