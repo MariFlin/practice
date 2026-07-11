@@ -30,7 +30,7 @@ namespace task05
                 return new List<string>();
             }
             
-            var paramNames = method.GetParameters().Select(p => p.Name);
+            var paramNames = method.GetParameters().Select(p => p.Name!);
             
             return paramNames.Append(method.ReturnType.Name);
         }

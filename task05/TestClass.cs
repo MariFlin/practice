@@ -1,3 +1,4 @@
+#pragma warning disable CS0414  // Поля используются через Reflection
 using System;
 
 namespace task05
@@ -12,13 +13,13 @@ namespace task05
     [Sample]
     public class SampleClass
     {
-        private int _privateField;
-        public string PublicField;
-        protected double ProtectedField;
-        private static int _staticField;
+        private int _privateField = 0;
+        public string PublicField = "";
+        protected double ProtectedField = 0;
+        private static int _staticField = 0;
 
-        public int PublicProperty { get; set; }
-        private string PrivateProperty { get; set; }
+        public int PublicProperty { get; set; } = 0;
+        private string PrivateProperty { get; set; } = "";
 
         public void MethodWithoutParams()
         {

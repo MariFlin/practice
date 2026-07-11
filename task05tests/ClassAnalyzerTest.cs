@@ -1,3 +1,4 @@
+#pragma warning disable CS0414  // Поля используются через Reflection
 using Xunit;
 using Moq;
 using task05;
@@ -6,7 +7,7 @@ using System.Linq;
 namespace task05test{
     public class TestClass
     {
-        public int PublicField;
+        public int PublicField = 0;
         private string _privateField = "";
         public int Property { get; set; }
 
