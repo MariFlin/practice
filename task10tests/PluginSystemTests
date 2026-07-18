@@ -1,0 +1,130 @@
+using Xunit;
+using System;
+using System.Collections.Generic;
+using System.Linq;
+using PluginSystem;
+
+namespace task10tests;
+
+public class PluginSystemTests
+{
+    [Fact]
+    public void PluginLoadAttribute_HasCorrectDefaults()
+    {
+        var attr = new PluginLoadAttribute();
+        Assert.Equal(0, attr.Priority);
+        Assert.Empty(attr.Dependencies);
+    }
+
+    [Fact]
+    public void PluginLoadAttribute_WithDependencies()
+    {
+        var attr = new PluginLoadAttribute(5, "A.dll", "B.dll");
+        Assert.Equal(5, attr.Priority);
+        Assert.Equal(new[] { "A.dll", "B.dll" }, attr.Dependencies);
+    }
+
+    [Fact]
+    public void IPluginCommand_InterfaceExists()
+    {
+        var type = typeof(IPluginCommand);
+        Assert.True(type.IsInterface);
+        Assert.NotNull(type.GetMethod("Execute"));
+        Assert.NotNull(type.GetProperty("Name"));
+    }
+
+    [Fact]
+    public void TopologicalSort_NoDependencies_ReturnsAllPlugins()
+    {
+        var plugins = CreateTestPlugins(3, deps: Array.Empty<string>());
+        var result = TopologicalSortHelper(plugins, new HashSet<string> { "test.dll" });
+        
+        Assert.NotNull(result);
+        Assert.Equal(3, result.Count);
+    }
+
+    [Fact]
+    public void TopologicalSort_CircularDependency_ReturnsNull()
+    {
+        var plugins = new List<TestPluginInfo>
+        {
+            new(typeof(FakeA), "A.dll", 1, new[] { "B.dll" }),
+            new(typeof(FakeB), "B.dll", 1, new[] { "A.dll" })
+        };
+        
+        var result = TopologicalSortHelper(plugins, new HashSet<string> { "A.dll", "B.dll" });
+        Assert.Null(result);
+    }
+
+    [Fact]
+    public void TopologicalSort_RespectsPriority()
+    {
+        var plugins = new List<TestPluginInfo>
+        {
+            new(typeof(FakeLow), "low.dll", 10, Array.Empty<string>()),
+            new(typeof(FakeHigh), "high.dll", 1, Array.Empty<string>())
+        };
+        
+        var result = TopologicalSortHelper(plugins, new HashSet<string> { "low.dll", "high.dll" });
+        
+        Assert.NotNull(result);
+        Assert.Equal(typeof(FakeHigh), result[0].Type);
+    }
+
+    private record TestPluginInfo(Type Type, string DllName, int Priority, string[] Dependencies);
+
+    private List<TestPluginInfo> CreateTestPlugins(int count, string[] deps)
+    {
+        var result = new List<TestPluginInfo>();
+        for (int i = 0; i < count; i++)
+        {
+            result.Add(new TestPluginInfo(
+                typeof(FakePlugin), $"fake{i}.dll", i + 1, deps));
+        }
+        return result;
+    }
+
+    private static List<TestPluginInfo>? TopologicalSortHelper(
+        List<TestPluginInfo> plugins, HashSet<string> availableDlls)
+    {
+        var inDegree = plugins.ToDictionary(p => p.Type, _ => 0);
+        var adj = plugins.ToDictionary(p => p.Type, _ => new List<TestPluginInfo>());
+
+        foreach (var p in plugins)
+        {
+            foreach (var dep in p.Dependencies)
+            {
+                foreach (var other in plugins.Where(o => 
+                    o.DllName.Equals(dep, StringComparison.OrdinalIgnoreCase) && o != p))
+                {
+                    adj[other].Add(p);
+                    inDegree[p.Type]++;
+                }
+            }
+        }
+
+        var queue = new System.Collections.Generic.Queue<Type>(
+            inDegree.Where(kvp => kvp.Value == 0)
+                    .OrderBy(kvp => plugins.First(p => p.Type == kvp.Key).Priority)
+                    .Select(kvp => kvp.Key));
+
+        var result = new List<TestPluginInfo>();
+        while (queue.Count > 0)
+        {
+            var cur = queue.Dequeue();
+            result.Add(plugins.First(p => p.Type == cur));
+            foreach (var next in adj[cur])
+            {
+                if (--inDegree[next.Type] == 0) queue.Enqueue(next.Type);
+            }
+        }
+
+        return result.Count == plugins.Count ? result : null;
+    }
+
+    private class FakePlugin : IPluginCommand { public string Name => "Fake"; public void Execute() { } }
+    private class FakeA : IPluginCommand { public string Name => "A"; public void Execute() { } }
+    private class FakeB : IPluginCommand { public string Name => "B"; public void Execute() { } }
+    private class FakeHigh : IPluginCommand { public string Name => "High"; public void Execute() { } }
+    private class FakeLow : IPluginCommand { public string Name => "Low"; public void Execute() { } }
+}

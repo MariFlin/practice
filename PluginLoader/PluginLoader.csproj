@@ -1,0 +1,23 @@
+﻿<Project Sdk="Microsoft.NET.Sdk">
+
+  <ItemGroup>
+    <ProjectReference Include="..\PluginSystem\PluginSystem.csproj" />
+  </ItemGroup>
+
+  <PropertyGroup>
+    <OutputType>Exe</OutputType>
+    <TargetFramework>net8.0</TargetFramework>
+    <ImplicitUsings>enable</ImplicitUsings>
+    <Nullable>enable</Nullable>
+  </PropertyGroup>
+
+<Target Name="CopyPlugins" AfterTargets="Build">
+  <ItemGroup>
+    <PluginFiles Include="$(SolutionDir)BaseLoggerPlugin/bin/$(Configuration)/net8.0/BaseLoggerPlugin.dll" />
+    <PluginFiles Include="$(SolutionDir)Plugins/bin/$(Configuration)/net8.0/Plugins.dll" />
+  </ItemGroup>
+  <MakeDir Directories="$(OutDir)plugins" />
+  <Copy SourceFiles="@(PluginFiles)" DestinationFolder="$(OutDir)plugins/" SkipUnchangedFiles="true" />
+</Target>
+
+</Project>
