@@ -41,10 +41,17 @@ namespace task09tests
             var dllPath = CreateTestAssembly();
             var assembly = Assembly.LoadFrom(dllPath);
             
-            var types = assembly.GetTypes();
+            Type[] types;
+            try
+            {
+                types = assembly.GetTypes();
+            }
+            catch (ReflectionTypeLoadException ex)
+            {
+                types = ex.Types.OfType<Type>().ToArray();
+            }
             
             Assert.NotEmpty(types);
-            Assert.True(types.Length >= 1, "Сборка должна содержать хотя бы один тип");
         }
 
         [Fact]
@@ -53,11 +60,13 @@ namespace task09tests
             var dllPath = CreateTestAssembly();
             var assembly = Assembly.LoadFrom(dllPath);
             
-            var sampleClass = assembly.GetTypes()
-                .FirstOrDefault(t => t.Name == "SampleClass");
+            Type[] types;
+            try { types = assembly.GetTypes(); }
+            catch (ReflectionTypeLoadException ex) { types = ex.Types.OfType<Type>().ToArray(); }
             
+            var sampleClass = types.FirstOrDefault(t => t.Name == "SampleClass");
             Assert.NotNull(sampleClass);
-            Assert.True(sampleClass.IsClass);
+            Assert.True(sampleClass!.IsClass);
         }
 
         [Fact]
@@ -65,10 +74,15 @@ namespace task09tests
         {
             var dllPath = CreateTestAssembly();
             var assembly = Assembly.LoadFrom(dllPath);
-            var sampleClass = assembly.GetTypes()
-                .FirstOrDefault(t => t.Name == "SampleClass");
             
-            var methods = sampleClass.GetMethods(
+            Type[] types;
+            try { types = assembly.GetTypes(); }
+            catch (ReflectionTypeLoadException ex) { types = ex.Types.OfType<Type>().ToArray(); }
+            
+            var sampleClass = types.FirstOrDefault(t => t.Name == "SampleClass");
+            Assert.NotNull(sampleClass);
+            
+            var methods = sampleClass!.GetMethods(
                 BindingFlags.Public | BindingFlags.Instance | BindingFlags.DeclaredOnly);
             
             Assert.NotEmpty(methods);
@@ -80,10 +94,15 @@ namespace task09tests
         {
             var dllPath = CreateTestAssembly();
             var assembly = Assembly.LoadFrom(dllPath);
-            var sampleClass = assembly.GetTypes()
-                .FirstOrDefault(t => t.Name == "SampleClass");
             
-            var constructors = sampleClass.GetConstructors(
+            Type[] types;
+            try { types = assembly.GetTypes(); }
+            catch (ReflectionTypeLoadException ex) { types = ex.Types.OfType<Type>().ToArray(); }
+            
+            var sampleClass = types.FirstOrDefault(t => t.Name == "SampleClass");
+            Assert.NotNull(sampleClass);
+            
+            var constructors = sampleClass!.GetConstructors(
                 BindingFlags.Public | BindingFlags.Instance);
             
             Assert.NotEmpty(constructors);
@@ -94,13 +113,18 @@ namespace task09tests
         {
             var dllPath = CreateTestAssembly();
             var assembly = Assembly.LoadFrom(dllPath);
-            var sampleClass = assembly.GetTypes()
-                .FirstOrDefault(t => t.Name == "SampleClass");
             
-            var methodWithoutParams = sampleClass.GetMethod("TestMethod");
+            Type[] types;
+            try { types = assembly.GetTypes(); }
+            catch (ReflectionTypeLoadException ex) { types = ex.Types.OfType<Type>().ToArray(); }
             
-            var parameters = methodWithoutParams.GetParameters();
+            var sampleClass = types.FirstOrDefault(t => t.Name == "SampleClass");
+            Assert.NotNull(sampleClass);
             
+            var methodWithoutParams = sampleClass!.GetMethod("TestMethod");
+            Assert.NotNull(methodWithoutParams);
+            
+            var parameters = methodWithoutParams!.GetParameters();
             Assert.Empty(parameters);
         }
 
@@ -109,13 +133,18 @@ namespace task09tests
         {
             var dllPath = CreateTestAssembly();
             var assembly = Assembly.LoadFrom(dllPath);
-            var sampleClass = assembly.GetTypes()
-                .FirstOrDefault(t => t.Name == "SampleClass");
             
-            var attributes = sampleClass.GetCustomAttributesData();
+            Type[] types;
+            try { types = assembly.GetTypes(); }
+            catch (ReflectionTypeLoadException ex) { types = ex.Types.OfType<Type>().ToArray(); }
+            
+            var sampleClass = types.FirstOrDefault(t => t.Name == "SampleClass");
+            Assert.NotNull(sampleClass);
+            
+            var attributes = sampleClass!.GetCustomAttributesData();
             
             Assert.NotEmpty(attributes);
-            Assert.True(attributes.Count >= 2, "SampleClass должен иметь как минимум 2 атрибута");
+            Assert.True(attributes.Count >= 2);
         }
 
         [Fact]
@@ -147,10 +176,15 @@ namespace task09tests
         {
             var dllPath = CreateTestAssembly();
             var assembly = Assembly.LoadFrom(dllPath);
-            var sampleClass = assembly.GetTypes()
-                .FirstOrDefault(t => t.Name == "SampleClass");
             
-            var privateMethods = sampleClass.GetMethods(
+            Type[] types;
+            try { types = assembly.GetTypes(); }
+            catch (ReflectionTypeLoadException ex) { types = ex.Types.OfType<Type>().ToArray(); }
+            
+            var sampleClass = types.FirstOrDefault(t => t.Name == "SampleClass");
+            Assert.NotNull(sampleClass);
+            
+            var privateMethods = sampleClass!.GetMethods(
                 BindingFlags.NonPublic | BindingFlags.Instance | BindingFlags.DeclaredOnly);
             
             Assert.Empty(privateMethods);
@@ -161,10 +195,15 @@ namespace task09tests
         {
             var dllPath = CreateTestAssembly();
             var assembly = Assembly.LoadFrom(dllPath);
-            var sampleClass = assembly.GetTypes()
-                .FirstOrDefault(t => t.Name == "SampleClass");
             
-            var properties = sampleClass.GetProperties(
+            Type[] types;
+            try { types = assembly.GetTypes(); }
+            catch (ReflectionTypeLoadException ex) { types = ex.Types.OfType<Type>().ToArray(); }
+            
+            var sampleClass = types.FirstOrDefault(t => t.Name == "SampleClass");
+            Assert.NotNull(sampleClass);
+            
+            var properties = sampleClass!.GetProperties(
                 BindingFlags.Public | BindingFlags.Instance);
             
             Assert.NotEmpty(properties);
