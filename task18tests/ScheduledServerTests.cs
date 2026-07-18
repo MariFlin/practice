@@ -16,14 +16,19 @@ public class ScheduledServerTests
         var executionOrder = new List<string>();
         var scheduler = new RoundRobinScheduler();
         var server = new ScheduledServerThread(scheduler);
+        
+        var barrier = new Barrier(2); 
+
         server.Start();
 
-        scheduler.Add(new LongRunningCommand("A", 2, executionOrder));
-        scheduler.Add(new LongRunningCommand("B", 2, executionOrder));
+        scheduler.Add(new LongRunningCommand("A", 2, executionOrder, scheduler));
+        scheduler.Add(new LongRunningCommand("B", 2, executionOrder, scheduler));
+        
+        bool success = SpinWait.SpinUntil(() => executionOrder.Count >= 4, TimeSpan.FromSeconds(5));
+        
+        server.Dispose();
 
-        SpinWait.SpinUntil(() => executionOrder.Count >= 4, TimeSpan.FromSeconds(5));
-        server.Stop();
-
+        Assert.True(success, $"Ожидалось 4 операции, выполнено: {executionOrder.Count}");
         Assert.Equal(new[] { "A", "B", "A", "B" }, executionOrder);
     }
 
@@ -75,23 +80,30 @@ public class ScheduledServerTests
         server.Stop();
     }
 
+
     private class LongRunningCommand : ICommand
     {
         private readonly string _name;
         private int _remainingCalls;
         private readonly List<string> _log;
+        private readonly IScheduler _scheduler;
 
-        public LongRunningCommand(string name, int calls, List<string> log)
+        public LongRunningCommand(string name, int calls, List<string> log, IScheduler scheduler)
         {
             _name = name;
             _remainingCalls = calls;
             _log = log;
+            _scheduler = scheduler ?? throw new ArgumentNullException(nameof(scheduler));
         }
 
         public void Execute()
         {
+            Thread.Sleep(1);
             lock (_log) _log.Add(_name);
             _remainingCalls--;
+            
+            if (_remainingCalls > 0)
+                _scheduler.Add(this);
         }
     }
 
@@ -103,9 +115,9 @@ public class ScheduledServerTests
 
         public SelfReschedulingCommand(ScheduledServerThread server, int calls, Action onComplete)
         {
-            _server = server;
+            _server = server ?? throw new ArgumentNullException(nameof(server));
             _remainingCalls = calls;
-            _onComplete = onComplete;
+            _onComplete = onComplete ?? throw new ArgumentNullException(nameof(onComplete));
         }
 
         public void Execute()
@@ -121,7 +133,7 @@ public class ScheduledServerTests
     private class ActionCommand : ICommand
     {
         private readonly Action _action;
-        public ActionCommand(Action action) => _action = action;
+        public ActionCommand(Action action) => _action = action ?? throw new ArgumentNullException(nameof(action));
         public void Execute() => _action();
     }
 }

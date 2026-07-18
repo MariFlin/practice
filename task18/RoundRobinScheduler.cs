@@ -11,28 +11,21 @@ public class RoundRobinScheduler : IScheduler
 
     public bool HasCommand()
     {
-        lock (_lock)
-            return _queue.Count > 0;
+        lock (_lock) return _queue.Count > 0;
     }
 
     public ICommand Select()
     {
         lock (_lock)
         {
-            if (_queue.Count == 0)
-                throw new InvalidOperationException("Планировщик пуст");
-
-            var command = _queue.Dequeue();
-            _queue.Enqueue(command);
-            return command;
+            if (_queue.Count == 0) throw new InvalidOperationException("Планировщик пуст");
+            return _queue.Dequeue();
         }
     }
 
     public void Add(ICommand cmd)
     {
         if (cmd == null) throw new ArgumentNullException(nameof(cmd));
-        
-        lock (_lock)
-            _queue.Enqueue(cmd);
+        lock (_lock) _queue.Enqueue(cmd);
     }
 }

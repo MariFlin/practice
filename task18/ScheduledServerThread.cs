@@ -44,61 +44,76 @@ public class ScheduledServerThread : IDisposable
         _workAvailable.Set();
     }
 
-    private void ProcessCommands()
+private void ProcessCommands()
+{
+    try
     {
-        try
+        while (_isRunning)
         {
-            while (_isRunning)
+            ICommand? nextCommand = null;
+
+            if (_scheduler.HasCommand())
             {
-                ICommand? nextCommand = null;
-
+                nextCommand = _scheduler.Select();
+            }
+            else if (_newCommands.TryTake(out var newCmd, TimeSpan.Zero))
+            {
+                nextCommand = newCmd;
+            }
+            else
+            {
+                _workAvailable.Wait(TimeSpan.FromMilliseconds(50));
+                _workAvailable.Reset();
+                
                 if (_scheduler.HasCommand())
-                {
                     nextCommand = _scheduler.Select();
-                }
-                else
-                {
-                    _workAvailable.Wait();
-                    _workAvailable.Reset();
+                else if (_newCommands.TryTake(out newCmd, TimeSpan.Zero))
+                    nextCommand = newCmd;
+            }
 
-                    if (_scheduler.HasCommand())
-                        nextCommand = _scheduler.Select();
-                    else if (_newCommands.TryTake(out var newCmd, TimeSpan.Zero))
-                        nextCommand = newCmd;
-                }
-
-                if (nextCommand != null)
+            if (nextCommand != null)
+            {
+                try
                 {
-                    try
-                    {
-                        nextCommand.Execute();
-                    }
-                    catch (Exception ex)
-                    {
-                        Console.WriteLine($"[ExceptionHandler] Ошибка: {ex.Message}");
-                    }
+                    nextCommand.Execute();
+                }
+                catch (Exception ex)
+                {
+                    Console.WriteLine($"[ExceptionHandler] Ошибка в команде {nextCommand.GetType().Name}: {ex.Message}");
                 }
             }
         }
-        finally
-        {
-            _isRunning = false;
-            _newCommands.Dispose();
-            _workAvailable.Dispose();
-        }
     }
+    finally
+    {
+        _isRunning = false;
+        _newCommands.Dispose();
+        _workAvailable.Dispose();
+    }
+}
 
     public void Stop()
     {
         _isRunning = false;
-        _newCommands.CompleteAdding();
-        _workAvailable.Set();
+        
+        _workAvailable.Set(); 
+        
     }
 
     public void Dispose()
     {
-        Stop();
-        _thread.Join(TimeSpan.FromSeconds(5));
+        if (_thread.IsAlive)
+        {
+            Stop();
+            _thread.Join(TimeSpan.FromSeconds(5));
+        }
+        
+        try 
+        { 
+            _newCommands.CompleteAdding(); 
+        } 
+        catch {  }
+        
         _newCommands.Dispose();
         _workAvailable.Dispose();
     }
