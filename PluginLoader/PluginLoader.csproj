@@ -2,6 +2,8 @@
 
   <ItemGroup>
     <ProjectReference Include="..\PluginSystem\PluginSystem.csproj" />
+    <ProjectReference Include="..\BaseLoggerPlugin\BaseLoggerPlugin.csproj" ReferenceOutputAssembly="false" />
+    <ProjectReference Include="..\Plugins\Plugins.csproj" ReferenceOutputAssembly="false" />
   </ItemGroup>
 
   <PropertyGroup>
